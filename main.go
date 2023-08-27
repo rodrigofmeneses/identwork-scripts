@@ -59,5 +59,5 @@ func main() {
 
 	fmt.Println(employeesData)
 	employees := parseDataToEmployees(employeesData[1:])
-	fmt.Println(employees[0].ID)
+	fmt.Println(employees)
 }
