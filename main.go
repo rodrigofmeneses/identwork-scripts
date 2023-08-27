@@ -1,16 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"identwork-scripts/schemas"
 
 	"github.com/xuri/excelize/v2"
-)
-
-const (
-	ROOT_PHOTOS_FOLDER   = "C:/Users/Mareg/OneDrive/Maré Gráfica/Clientes/LAP/Crachás/Orgaos/"
-	SUFFIX_PHOTOS_FOLDER = "fotos/3x4"
 )
 
 func readExcel(filename, sheet string) ([][]string, error) {
@@ -50,14 +49,45 @@ func parseDataToEmployees(employeesData [][]string) schemas.Employees {
 func EmployeesToTxt(employees schemas.Employees) {
 }
 
+func validateDirectoryPath(path string) error {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("directory does not exist")
+		}
+		return err
+	}
+	if !fileInfo.IsDir() {
+		return fmt.Errorf("this path is not a directory")
+	}
+	filePaths, err := filepath.Glob(filepath.Join(path, "*"))
+	if err != nil {
+		if len(filePaths) == 0 {
+			return fmt.Errorf("directory is empty")
+		}
+		return err
+	}
+	return nil
+}
+
 func main() {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Please enter the path to the photo directory")
+
+	photoDirectoryPath, _ := reader.ReadString('\n')
+	photoDirectoryPath = strings.TrimSpace(photoDirectoryPath)
+
+	if err := validateDirectoryPath(photoDirectoryPath); err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	employeesData, err := readExcel("employees.xlsx", "Cards")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	fmt.Println(employeesData)
 	employees := parseDataToEmployees(employeesData[1:])
 	fmt.Println(employees)
 }
