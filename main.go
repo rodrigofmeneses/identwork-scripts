@@ -2,14 +2,20 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"identwork-scripts/schemas"
 
 	"github.com/xuri/excelize/v2"
+)
+
+const (
+	OUTPUT_DIR = "output"
 )
 
 func readExcel(filename, sheet string) ([][]string, error) {
@@ -46,7 +52,75 @@ func parseDataToEmployees(employeesData [][]string) schemas.Employees {
 	return employees
 }
 
-func EmployeesToTxt(employees schemas.Employees) {
+func employeesToTxt(employees schemas.Employees) error {
+	timestamp := time.Now().Format("2-Jan-2006 15:04:05")
+	frontName := fmt.Sprintf("%s/%s/front-%s.txt", OUTPUT_DIR, timestamp, timestamp)
+	backName := fmt.Sprintf("%s/%s/back-%s.txt", OUTPUT_DIR, timestamp, timestamp)
+
+	if err := createDirectories(timestamp); err != nil {
+		return err
+	}
+	if err := createFrontFile(employees, frontName); err != nil {
+		return err
+	}
+	if err := createBackFile(employees, backName); err != nil {
+		return err
+	}
+	return nil
+}
+
+func createDirectories(timestamp string) error {
+	if _, err := os.Stat(OUTPUT_DIR); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(OUTPUT_DIR, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+	if _, err := os.Stat(OUTPUT_DIR + "/" + timestamp); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(OUTPUT_DIR+"/"+timestamp, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func createFrontFile(employees schemas.Employees, path string) error {
+	front, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer front.Close()
+
+	fmt.Fprint(front, "matricula\tnome_guerra\tcargo\tlotacao\tfoto\tmostrar_foto\n")
+	for _, employee := range employees {
+		fmt.Fprintf(front, "%s\t", employee.ID)
+		fmt.Fprintf(front, "%s\t", employee.WarName)
+		fmt.Fprintf(front, "%s\t", employee.Role)
+		fmt.Fprintf(front, "%s\t", employee.Workplace)
+		fmt.Fprintf(front, "%s\t", "true")
+		fmt.Fprintf(front, "%s\t", "true")
+		fmt.Fprintln(front)
+	}
+	return nil
+}
+
+func createBackFile(employees schemas.Employees, path string) error {
+	back, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer back.Close()
+
+	fmt.Fprint(back, "matricula\tnome\tidentidade\tadmissao\n")
+	for _, employee := range employees {
+		fmt.Fprintf(back, "%s\t", employee.ID)
+		fmt.Fprintf(back, "%s\t", employee.Name)
+		fmt.Fprintf(back, "%s\t", employee.Identification)
+		fmt.Fprintf(back, "%s\t", employee.AdmissionDate)
+		fmt.Fprintln(back)
+	}
+	return nil
 }
 
 func validateDirectoryPath(path string) error {
@@ -89,5 +163,9 @@ func main() {
 	}
 
 	employees := parseDataToEmployees(employeesData[1:])
-	fmt.Println(employees)
+
+	if err := employeesToTxt(employees); err != nil {
+		fmt.Println(err)
+		return
+	}
 }
