@@ -12,3 +12,5 @@ type Employee struct {
 }
 
 type Employees []Employee
+
+type PhotoIdExtension map[string]string
