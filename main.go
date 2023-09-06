@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -74,10 +75,36 @@ func parseDataToEmployees(employeesData [][]string) schemas.Employees {
 }
 
 func employeesToTxt(employees *schemas.Employees, photoDirectoryPath string) error {
-	timestamp := time.Now().Format("2-Jan-2006 15:04:05")
-	frontFileName := fmt.Sprintf("%s/%s/front-%s.txt", OUTPUT_DIR, timestamp, timestamp)
-	backFileName := fmt.Sprintf("%s/%s/back-%s.txt", OUTPUT_DIR, timestamp, timestamp)
-	missingPhotoFileName := fmt.Sprintf("%s/%s/missing-photo-%s.txt", OUTPUT_DIR, timestamp, timestamp)
+	// timestamp := time.Now().Format("2-Jan-2006-15-04-05")
+	timestamp := time.Now()
+	fmt.Println(strconv.Itoa(timestamp.Nanosecond()))
+
+	frontFileName := fmt.Sprintf(
+		"%s/%s/%s/%s/front-%s.txt",
+		OUTPUT_DIR,
+		timestamp.Month().String(),
+		strconv.Itoa(timestamp.Day()),
+		strconv.Itoa(timestamp.Nanosecond()),
+		strconv.Itoa(timestamp.Nanosecond()),
+	)
+	// frontFileName := fmt.Sprintf("%s/%s/front.txt", OUTPUT_DIR, timestamp)
+	backFileName := fmt.Sprintf(
+		"%s/%s/%s/%s/back-%s.txt",
+		OUTPUT_DIR,
+		timestamp.Month().String(),
+		strconv.Itoa(timestamp.Day()),
+		strconv.Itoa(timestamp.Nanosecond()),
+		strconv.Itoa(timestamp.Nanosecond()),
+	)
+	// backFileName := fmt.Sprintf("%s/%s/back.txt", OUTPUT_DIR, timestamp)
+	missingPhotoFileName := fmt.Sprintf(
+		"%s/%s/%s/%s/missing-photo-%s.txt",
+		OUTPUT_DIR,
+		timestamp.Month().String(),
+		strconv.Itoa(timestamp.Day()),
+		strconv.Itoa(timestamp.Nanosecond()),
+		strconv.Itoa(timestamp.Nanosecond()),
+	)
 
 	extensions, err := getPhotosExtensions(employees, photoDirectoryPath)
 	if err != nil {
@@ -142,15 +169,31 @@ func getEmployeesWithPhotos(employees schemas.Employees, photosIDsExtensions sch
 	return employeesWithPhoto, employeesWithoutPhoto
 }
 
-func createDirectories(timestamp string) error {
-	if _, err := os.Stat(OUTPUT_DIR); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(OUTPUT_DIR, os.ModePerm)
+func createDirectories(timestamp time.Time) error {
+	filepath := OUTPUT_DIR
+	if _, err := os.Stat(filepath); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(filepath, os.ModePerm)
 		if err != nil {
 			return err
 		}
 	}
-	if _, err := os.Stat(OUTPUT_DIR + "/" + timestamp); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(OUTPUT_DIR+"/"+timestamp, os.ModePerm)
+	filepath = filepath + "/" + timestamp.Month().String()
+	if _, err := os.Stat(filepath); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(filepath, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+	filepath = filepath + "/" + strconv.Itoa(timestamp.Day())
+	if _, err := os.Stat(filepath); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(filepath, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+	filepath = filepath + "/" + strconv.Itoa(timestamp.Nanosecond())
+	if _, err := os.Stat(filepath); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(filepath, os.ModePerm)
 		if err != nil {
 			return err
 		}
@@ -236,8 +279,11 @@ func main() {
 
 	fmt.Println("Saving data in .txt files...")
 	if err := employeesToTxt(&employees, photoDirectoryPath); err != nil {
-		fmt.Println(err)
+		fmt.Println("employeesToTxt", err)
 		return
 	}
 	fmt.Println("Done!")
+	fmt.Println("Click to exit")
+	exit, _ := reader.ReadString('\n')
+	fmt.Println(exit)
 }
