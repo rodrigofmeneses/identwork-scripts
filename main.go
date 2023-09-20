@@ -75,31 +75,31 @@ func parseDataToEmployees(employeesData [][]string) schemas.Employees {
 }
 
 func employeesToTxt(employees *schemas.Employees, photoDirectoryPath string) error {
-	// timestamp := time.Now().Format("2-Jan-2006-15-04-05")
 	timestamp := time.Now()
 	fmt.Println(strconv.Itoa(timestamp.Nanosecond()))
 
 	frontFileName := fmt.Sprintf(
-		"%s/%s/%s/%s/front-%s.txt",
+		"%s/%s/%s/%s/%s/front-%s.txt",
 		OUTPUT_DIR,
+		strconv.Itoa(timestamp.Year()),
 		timestamp.Month().String(),
 		strconv.Itoa(timestamp.Day()),
 		strconv.Itoa(timestamp.Nanosecond()),
 		strconv.Itoa(timestamp.Nanosecond()),
 	)
-	// frontFileName := fmt.Sprintf("%s/%s/front.txt", OUTPUT_DIR, timestamp)
 	backFileName := fmt.Sprintf(
-		"%s/%s/%s/%s/back-%s.txt",
+		"%s/%s/%s/%s/%s/back-%s.txt",
 		OUTPUT_DIR,
+		strconv.Itoa(timestamp.Year()),
 		timestamp.Month().String(),
 		strconv.Itoa(timestamp.Day()),
 		strconv.Itoa(timestamp.Nanosecond()),
 		strconv.Itoa(timestamp.Nanosecond()),
 	)
-	// backFileName := fmt.Sprintf("%s/%s/back.txt", OUTPUT_DIR, timestamp)
 	missingPhotoFileName := fmt.Sprintf(
-		"%s/%s/%s/%s/missing-photo-%s.txt",
+		"%s/%s/%s/%s/%s/missing-photo-%s.txt",
 		OUTPUT_DIR,
+		strconv.Itoa(timestamp.Year()),
 		timestamp.Month().String(),
 		strconv.Itoa(timestamp.Day()),
 		strconv.Itoa(timestamp.Nanosecond()),
@@ -171,6 +171,13 @@ func getEmployeesWithPhotos(employees schemas.Employees, photosIDsExtensions sch
 
 func createDirectories(timestamp time.Time) error {
 	filepath := OUTPUT_DIR
+	if _, err := os.Stat(filepath); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(filepath, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+	filepath = filepath + "/" + strconv.Itoa(timestamp.Year())
 	if _, err := os.Stat(filepath); errors.Is(err, os.ErrNotExist) {
 		err := os.Mkdir(filepath, os.ModePerm)
 		if err != nil {
@@ -263,14 +270,14 @@ func main() {
 
 	fmt.Println("Validating photo directory...")
 	if err := validateDirectoryPath(photoDirectoryPath); err != nil {
-		fmt.Println(err)
+		fmt.Println("Error validating photo directory", err)
 		return
 	}
 
 	fmt.Println("Reading excel data...")
 	employeesData, err := readExcel("employees.xlsx", "Cards")
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Error reading excel data", err)
 		return
 	}
 
@@ -279,7 +286,7 @@ func main() {
 
 	fmt.Println("Saving data in .txt files...")
 	if err := employeesToTxt(&employees, photoDirectoryPath); err != nil {
-		fmt.Println("employeesToTxt", err)
+		fmt.Println("Error saving employees", err)
 		return
 	}
 	fmt.Println("Done!")
